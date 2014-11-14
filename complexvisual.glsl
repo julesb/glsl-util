@@ -255,7 +255,7 @@ float cosine_lerp(float y1,float y2, float mu) {
 
 #define cx_mul(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
 //#define cx_div(a, b) (cx_mul(a , cx_inv(b)))
-#define cx_div(a, b) vec2(((a.x*b.x+a.y+b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y))
+#define cx_div(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
 #define cx_modulus(a) length(a)
 #define cx_conj(a) vec2(a.x,-a.y)
 #define cx_arg(a) atan2(a.y,a.x)
