@@ -105,38 +105,6 @@ vec3 HSLToRGB(vec3 hsl) {
 	return rgb;
 }
 
-/*
-vec3 blend_any(vec3 base, vec3 blend, int mode) {
-    if (mode==0) return BlendNormal(base, blend);
-    else if(mode==1) return BlendLighten(base,blend);
-    else if(mode==2) return BlendDarken(base,blend);
-    else if(mode==3) return BlendMultiply(base, blend);
-    else if(mode==4) return BlendAverage(base, blend);
-    else if(mode==5) return BlendAdd(base, blend);
-    else if(mode==6) return BlendSubtract(base, blend);
-    else if(mode==7) return BlendDifference(base, blend);
-    else if(mode==8) return BlendNegation(base, blend);
-    else if(mode==9) return BlendExclusion(base, blend);
-    else if(mode==10) return BlendScreen(base, blend);
-    else if(mode==11) return BlendOverlay(base, blend);
-    else if(mode==12) return BlendSoftLight(base, blend);
-    else if(mode==13) return BlendHardLight(base, blend);
-    else if(mode==14) return BlendColorDodge(base, blend);
-    else if(mode==15) return BlendColorBurn(base, blend);
-    else if(mode==16) return BlendLinearDodge(base, blend);
-    else if(mode==17) return BlendLinearBurn(base, blend);
-    else if(mode==18) return BlendLinearLight(base, blend);
-    else if(mode==19) return BlendVividLight(base, blend);
-    else if(mode==20) return BlendPinLight(base, blend);
-    else if(mode==21) return BlendHardMix(base, blend);
-    else if(mode==22) return BlendReflect(base, blend);
-    else if(mode==23) return BlendGlow(base, blend);
-    else if(mode==24) return BlendPhoenix(base, blend);
-    //else if(mode==25) return BlendOpacity(base, blend, F, O);
-    else return vec3(1,0,0);
-}
-*/
-
 vec3 blend_any_opacity(vec3 base, vec3 blend, int mode, float opacity) {
     if (mode==0) return BlendOpacity(base, blend, BlendNormal, opacity);
     else if(mode==1) return BlendOpacity(base,blend, BlendLighten, opacity);
@@ -180,7 +148,6 @@ vec3 blend_lerper(vec3 c1, vec3 c2, float o1, float o2, int blendmode_offset, fl
 
 uniform float FrameCount;
 uniform float AnimateTime;
-//uniform vec2 Position;
 uniform vec2 MousePos;
 uniform float Zoom;
 uniform float MaxIterations;
@@ -222,8 +189,6 @@ uniform float TransformInterpolator;
 uniform float TransformLerpSpeed;
 
 uniform float NumTransformIterations;
-// uniform float TransformLerpTime;
-
 
 uniform vec4 BackgroundColor;
 uniform float LayerGridVisible;
@@ -253,23 +218,21 @@ float cosine_lerp(float y1,float y2, float mu) {
  */
 
 
+#define cx_add(a, b) vec2(a.x + b.x, a.y + b.y)
+#define cx_sub(a, b) vec2(a.x - b.x, a.y - b.y)
 #define cx_mul(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
-//#define cx_div(a, b) (cx_mul(a , cx_inv(b)))
 #define cx_div(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
 #define cx_modulus(a) length(a)
 #define cx_conj(a) vec2(a.x,-a.y)
 #define cx_arg(a) atan2(a.y,a.x)
 #define cx_sin(a) vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y))
 #define cx_cos(a) vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y))
-//#define cx_tan cx_div(cx_sin(a), cx_cos(a))
 
-//vec2 cx_add(vec2 a, vec2 b) { return a+b;} // is redundant
-//vec2 cx_sub(vec2 a, vec2 b) { return a-b;} // is redundant
-//vec2 cx_mul(vec2 a, vec2 b) { return vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x);}
-//vec2 cx_div(vec2 a, vec2 b) { return cx_mul(a , cx_inv(b));}
-//float cx_modulus(vec2 a) {return sqrt(a.x*a.x+a.y*a.y);}
-//float cx_modulus(vec2 a) {return length(a); }
-//float cx_arg(vec2 a) {return atan2(a.y,a.x);}
+vec2 cx_to_polar(vec2 a) {
+    float phi = atan(a.x, a.y);
+    float r = sqrt(a.x * a.x + a.y * a.y);
+    return vec2(r, phi);
+}
 
 vec2 cx_sqrt(vec2 a) {
     float r = sqrt(a.x*a.x+a.y*a.y);
@@ -279,8 +242,6 @@ vec2 cx_sqrt(vec2 a) {
     return vec2(rpart,ipart);
 }
 
-//vec2 cx_sin(vec2 a) {return vec2(sin(a.x) * cosh(a.y), cos(a.x) * sinh(a.y));}
-//vec2 cx_cos(vec2 a) {return vec2(cos(a.x) * cosh(a.y), -sin(a.x) * sinh(a.y));}
 vec2 cx_tan(vec2 a) {return cx_div(cx_sin(a), cx_cos(a)); }
 
 vec2 cx_log(vec2 a) {
@@ -295,10 +256,11 @@ vec2 cx_mobius(vec2 a) {
     vec2 c2 = a + vec2(1.0,0.0);
     return cx_div(c1, c2);
 }
+
 vec2 cx_z_plus_one_over_z(vec2 a) {
     return a + cx_div(vec2(1.0,0.0), a);
-    //return cx_add(a, cx_div(vec2(1.0,0.0), a));
 }
+
 vec2 cx_z_squared_plus_c(vec2 z, vec2 c) {
     return cx_mul(z, z) + c;
 }
@@ -342,9 +304,7 @@ vec2 cx_transform_lerper(vec2 a, float t) {
     int tx2 = (tx1+1) % NUM_TRANSFORM_IDS;
     a1 = cx_transform_by_id(tx1, a);
     a2 = cx_transform_by_id(tx2, a);
-    //return mix(a1, a2, fract(t));
     return vec2(cosine_lerp(a1.x,a2.x,fract(t)), cosine_lerp(a1.y,a2.y, fract(t)));
-
 }
 
 
@@ -365,54 +325,11 @@ vec2 jitter(vec2 c) {
 
 //
 // Noise
-/*
-vec4 rand2(vec2 A,vec2 B,vec2 C,vec2 D){
-
-        vec2 s = vec2 (12.9898,78.233);
-
-        vec4 tmp = vec4( dot(A,s),dot(B,s),dot(C,s),dot(D,s));
-
-        return fract(tan(tmp)  * 43758.5453);
-
-        }
-
-
-
-float noise(vec2 coord,float d){
-
-        vec2 C[4];
-
-        C[0] = floor( coord * d)/d ;
-
-        C[1] = C[0] + vec2(1.0/d ,0.0  );
-
-        C[2] = C[0] + vec2(1.0/d ,1.0/d);
-
-        C[3] = C[0] + vec2(0.0   ,1.0/d);
-
-
-
-        vec2 p = fract(coord * d);
-
-        vec2 q = 1.0 - p;
-
-        vec4 w = vec4(q.x * q.y, p.x * q.y, p.x * p.y, q.x * p.y);
-
-
-
-        return dot(vec4(rand2(C[0],C[1],C[2],C[3])),w);
-
-        }
-
-*/
-
 vec4 rand(vec2 A,vec2 B,vec2 C,vec2 D){
     vec2 s=vec2(12.9898,78.233);
     vec4 tmp=vec4(dot(A,s),dot(B,s),dot(C,s),dot(D,s));
     return fract(sin(tmp) * 43758.5453)* 2.0 - 1.0;
 }
-
-
 
 float noise(vec2 coord,float d){
     vec2 C[4];
@@ -427,26 +344,7 @@ float noise(vec2 coord,float d){
     return dot(vec4(rand(C[0],C[1],C[2],C[3])),w);
 }
 
-/*
 vec4 get_noise_color(vec2 a) {
-       float level= -1.0 -log2 (min(length(dFdx(a)),length(dFdy(a))));
-        //-1.0 is a bias shift to avoid flickering
-        level = min(level,16.0); //limit the level. Equalient to a 65536x65536 texture
-        float n = 0.5;
-        for(int i = 3; i< int(level);i++){
-            n +=  0.12 * noise(a, exp2(float(i)));
-        }
-        n +=  0.12 * noise(gl_TexCoord[0].xy, exp2(floor(level)+1.0)) * fract(level);
-
-        // add the last level multiplied with the fraction of the
-        // level calculation for a smooth filtering
-        return  max(0.0,sin (n* 12.0))* vec4(0.3,0.8,0.4,0.0) + vec4(0.3,0.3,0.5,0.0) * n;
-}
-*/
-
-
-vec4 get_noise_color(vec2 a) {
-    //float n = noise(a, 128.0);
     float level= -log2(min(length(dFdx(a)),length(dFdy(a))));
     level = min(level,13.0); //limit the level to avoid slowness
     float n = 0.5;
@@ -471,7 +369,6 @@ float get_smooth_branch_factor(float u, float v) {
   }
 
 vec4 mandelbrot(vec2 z) {
-    //float tmp = -float(TIME_FROM_INIT)*AnimSpeed;
     float   real  = z.x; // gl_TexCoord[0].s * Zoom + Position.x;
     float   imag  = z.y; //gl_TexCoord[0].t * Zoom + Position.y;
     float   Creal = real;   // Change this line...
@@ -512,7 +409,6 @@ vec4 mandelbrot(vec2 z) {
 
     // smooth branch shading
     float sbf = get_smooth_branch_factor(arg, mu);
-    //return vec4(sbf,sbf,sbf,1.0);
     return vec4(sbf,sbf,sbf,sbf);
 
     // Base the color on the number of iterations
@@ -541,32 +437,22 @@ vec4 mandelbrot(vec2 z) {
 
     if ((nearest_int.x < LineWidth) && (nearest_int.y < LineWidth)) { // line intersection
       bri = 2.0 - (nearest_int.x+nearest_int.y) / LineWidth; // better
-      //linecolor.a = bri;
       return linecolor * bri;
-      //return vec4(linecolor, bri);
-      //return vec4(bri,bri,bri,bri);
     }
     else if ((nearest_int.x < LineWidth) || (nearest_int.y < LineWidth)) {
       if (nearest_int.x < LineWidth) {
             bri = ((1.-nearest_int.x/(LineWidth)));
-            //linecolor.a = bri;
             return linecolor * bri;
-            //return vec4(1.0,1.0,1.0,bri);
-            //return vec4(bri,bri,bri,bri);
       }
       else if (nearest_int.y < LineWidth) {
         bri = ((1.-nearest_int.y/(LineWidth)));
-        //linecolor.a = bri;
         return linecolor * bri;
-        //return vec4(1.0,1.0,1.0,bri);
-        //return vec4(bri,bri,bri,bri);
       }
     }
     else {
         linecolor = bgcolor;
     }
     return linecolor;
-    //return vec4(1.0,0.0,0.0,0.0);
   }
 
 
@@ -592,18 +478,7 @@ vec4 get_integer_circles_color(vec2 c) {
     return pixel;
 }
 
-/*
 vec3 get_hsbmap_color(vec2 c) {
-    return HSLToRGB(vec3((cx_arg(c) + PI) / (PI*2.0), 1.0, 0.5));
-}
-*/
-
-vec3 get_hsbmap_color(vec2 c) {
-//    return HSLToRGB(vec3( (((cx_arg(c) + PI) / (PI*2.0)) + HSBMapAngleOffset)*0.5 , 1.0, 0.5));
-    //return HSLToRGB(vec3(fract(cx_arg(c) + HSBMapAngleOffset), 1.0, 0.5));
-
-//    float hue = (cx_arg(c) + PI) / (PI*2.0); // 0..1
-
     return HSLToRGB(vec3( fract(((cx_arg(c) + PI) / (PI*2.0)) + HSBMapAngleOffset), 1.0, 0.5));
 }
 
@@ -621,7 +496,6 @@ vec4 get_image_color(vec2 c) {
 vec2 do_cx_transforms(vec2 a) {
     for (int i=0; i < int(NumTransformIterations); i++) {
         if (TransformMobius == 1.0) {
-            //a = cx_mobius(a);
             a = cx_mobius(cx_div(MousePos, a));
             a = cx_mobius(cx_div(MousePos, a));
         }
@@ -641,8 +515,6 @@ vec2 do_cx_transforms(vec2 a) {
 float get_local_space_scale_factor(vec2 a) {
     vec2 c1 = do_cx_transforms(a);
     vec2 c2 = do_cx_transforms(a + (normalize(a)*0.1));
-    //return log( distance(c1,c2)) * 0.1;
-    //return 1.0 - (1.0 / (1.0 + distance(c1,c2)));
     return (1.0 / (1.0 + distance(c1,c2)));
 
 
@@ -650,8 +522,6 @@ float get_local_space_scale_factor(vec2 a) {
 float get_local_space_scale_factor2(vec2 a) {
     vec2 c1 = do_cx_transforms(a);
     vec2 c2 = do_cx_transforms(a + (normalize(a)*1.0));
-    //return log( distance(c1,c2)) * 0.1;
-    //return 1.0 - (1.0 / (1.0 + distance(c1,c2)));
     return (1.0 / (1.0 + distance(c1,c2)));
 
 
@@ -659,15 +529,12 @@ float get_local_space_scale_factor2(vec2 a) {
 float get_local_space_scale_factor3(vec2 a1, vec2 a2) {
     float d = abs(length(a1) - length(a2));
     return (1.0 / (1.0 + d));
-    //return (d>1.0)? 1.0: (1.0 / d);
 }
 
 
 void main(void) {
     vec2 c = gl_TexCoord[0].st;
     vec2 c_untransformed = c;
-    //vec2 tmp = MousePos;
-    //c = jitter(c);
 
     c = do_cx_transforms(c);
 
@@ -689,7 +556,6 @@ void main(void) {
         }
         else {
             if (BlendmodeInterpolator == 1.0) {
-                //color = vec4(blend_lerper(color.rgb, px_image.rgb, LayerOpacity1*px_image.a, LayerOpacity1*px_image.a, int(LayerBlendMode1), blendtime), 1.0);
                 color = vec4(blend_lerper(color.rgb, px_image.rgb, LayerOpacity1, LayerOpacity1, int(LayerBlendMode1), blendtime), 1.0);
             } 
             else {
@@ -703,7 +569,6 @@ void main(void) {
     }
     if (LayerGridVisible == 1.0) {
         vec4 px_grid = get_grid_pixel_color(c);
-        //color = vec4(blend_any_opacity(color.rgb, px_grid.rgb, int(LayerBlendMode3), LayerOpacity3*px_grid.a), 1.0);
         if (BlendmodeInterpolator == 1.0) {
             color = vec4(blend_lerper(color.rgb, px_grid.rgb, LayerOpacity3, LayerOpacity3, int(LayerBlendMode3), blendtime), 1.0);
         }
@@ -713,9 +578,6 @@ void main(void) {
     }
     if (LayerIntCirclesVisible == 1.0) {
         vec4 px_intcircles = get_integer_circles_color(c);
-        //color = vec4(blend_any_opacity(color.rgb, px_intcircles.rgb, int(LayerBlendMode4), LayerOpacity4*px_intcircles.a), 1.0);
-
-        //color = vec4(blend_any_opacity(color.rgb, px_intcircles.rgb, int(LayerBlendMode4), LayerOpacity4), 1.0);
         if (BlendmodeInterpolator == 1.0) {
             color = vec4(blend_lerper(color.rgb, px_intcircles.rgb, LayerOpacity4, LayerOpacity4, int(LayerBlendMode4), blendtime), 1.0);
         }
@@ -742,43 +604,15 @@ void main(void) {
         }
     }
 
-
-
-
-/*
-    if (LayerCoordDotsVisible == 1.0) {
-        vec4 px_coorddot = get_coord_dot_color(c, MousePos, vec3(1.0, 0.0, 0.0));
-        color = vec4(blend_any_opacity(color.rgb, px_coorddot.rgb, int(LayerBlendMode6), LayerOpacity6*px_coorddot.a), 1.0);
-        vec4 px_coorddot2 = get_coord_dot_color(c_untransformed, MousePos, vec3(0.0, 1.0, 0.0));
-        color = vec4(blend_any_opacity(color.rgb, px_coorddot2.rgb, int(LayerBlendMode6), LayerOpacity6*px_coorddot2.a), 1.0);
-    }
-*/
-
     // test local space scaling metric
     if (LayerCoordDotsVisible == 1.0) {
-        //float s1 = get_local_space_scale_factor(c_untransformed);
         float s1 = get_local_space_scale_factor3(c_untransformed, c);
 
-        //float s1 = distance(c, c_untransformed);
-        //float s1 = length(c - c_untransformed);
-        //float s2 = (1.0 / (1.0 + s1));
-
-        // float spscale = 1.0 / log(s1);
-        //float spscale = log(s1);
         float spscale = s1; // clamp(s1, 0.0,1.0);
         
-        //spscale = smoothstep(0.0, 1.0, spscale);
-
-        // spscale = min(length(dFdx(c)),length(dFdy(c)));
-
         vec4 px_scalespace = vec4(spscale, spscale,spscale,spscale);
-        //vec4 px_coorddot = get_coord_dot_color(c, MousePos, vec3(1.0, 0.0, 0.0));
         
         color = vec4(blend_any_opacity(color.rgb, px_scalespace.rgb, int(LayerBlendMode6), LayerOpacity6), 1.0);
-        //color = vec4(blend_lerper(color.rgb, px_scalespace.rgb, LayerOpacity6, LayerOpacity6, int(LayerBlendMode6), TransformLerpTime), 1.0);
-
-        //vec4 px_coorddot2 = get_coord_dot_color(c_untransformed, MousePos, vec3(0.0, 1.0, 0.0));
-        //color = vec4(blend_any_opacity(color.rgb, px_coorddot2.rgb, int(LayerBlendMode6), LayerOpacity6*px_coorddot2.a), 1.0);
     }
 
 
